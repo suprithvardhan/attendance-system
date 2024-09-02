@@ -1,16 +1,14 @@
-'use client';
-
-import { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button/button";
-import { Input } from "@/components/ui/input/input";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table/table";
-import { useToast } from "@/components/ui/use-toast/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog/dialog";
-import { useMediaQuery } from "@/hooks/use-media-query";
-import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer/drawer";
-import { CSVLink } from "react-csv";
-
+import React, { useState, useEffect } from 'react';
+import { useMediaQuery} from '@/hooks/use-media-query';
+import { CSVLink } from 'react-csv';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Card , CardHeader,CardTitle,CardDescription,CardContent } from './ui/card/card';
+import { Button } from './ui/button/button';
+import { Table,TableHeader,TableRow,TableHead,TableBody,TableCell } from './ui/table/table';
+import { DrawerTitle,Drawer,DrawerTrigger,DrawerHeader,DrawerContent,DrawerDescription } from './ui/drawer/drawer';
+import { Dialog,DialogTrigger,DialogContent,DialogHeader,DialogTitle,DialogDescription } from './ui/dialog/dialog';
+import { useToast } from './ui/use-toast/use-toast';
+import { Input } from './ui/input/input';
 interface AttendanceRecord {
   rollNumber: string;
   timestamp: string;
@@ -25,6 +23,24 @@ interface AttendanceSession {
   endTime: string;
   isActive: boolean;
 }
+
+interface BranchCode {
+  [key: string]: string;
+}
+
+const branchCodes: BranchCode = {
+  '01': 'CE',
+  '02': 'EEE',
+  '03': 'ME',
+  '04': 'ECE',
+  '05': 'CSE',
+  '12': 'IT',
+  '19': 'ECM',
+  '62': 'CS',
+  '67': 'DS',
+  '66': 'AIML',
+  '69': 'IOT',
+};
 
 export default function AdminDashboard() {
   const [attendanceList, setAttendanceList] = useState<AttendanceRecord[]>([]);
@@ -118,44 +134,18 @@ export default function AdminDashboard() {
     }
   };
 
-  const StartAttendanceContent = (
-    <>
-      <Input
-        placeholder="Company Name"
-        value={companyName}
-        onChange={(e) => setCompanyName(e.target.value)}
-        className="mb-4"
-      />
-      <Input
-        type="number"
-        placeholder="Attendance Duration (minutes)"
-        value={attendanceDuration}
-        onChange={(e) => setAttendanceDuration(Number(e.target.value))}
-        className="mb-4"
-      />
-      <Button onClick={startAttendance} disabled={isLoading}>
-        {isLoading ? 'Starting...' : 'Start Attendance'}
-      </Button>
-    </>
-  );
-
-  const StopAttendanceContent = (
-    <>
-      <p>Are you sure you want to stop the current attendance session?</p>
-      <Button onClick={stopAttendance} disabled={isLoading} variant="destructive" className="mt-4">
-        {isLoading ? 'Stopping...' : 'Stop Attendance'}
-      </Button>
-    </>
-  );
-
   const generateCSVData = () => {
     return [
-      ['Roll Number', 'Timestamp', 'Location'],
-      ...attendanceList.map(record => [
-        record.rollNumber,
-        new Date(record.timestamp).toLocaleString(),
-        record.location
-      ])
+      ['Roll Number', 'Timestamp', 'Location', 'Branch'],
+      ...attendanceList.map(record => {
+        const branch = branchCodes[record.rollNumber.slice(0, 2)] || 'Unknown';
+        return [
+          record.rollNumber,
+          new Date(record.timestamp).toLocaleString(),
+          record.location,
+          branch
+        ];
+      })
     ];
   };
 
@@ -182,7 +172,22 @@ export default function AdminDashboard() {
                       <DrawerDescription>Enter session details</DrawerDescription>
                     </DrawerHeader>
                     <div className="p-4">
-                      {StartAttendanceContent}
+                      <Input
+                        placeholder="Company Name"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        className="mb-4"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Attendance Duration (minutes)"
+                        value={attendanceDuration}
+                        onChange={(e) => setAttendanceDuration(Number(e.target.value))}
+                        className="mb-4"
+                      />
+                      <Button onClick={startAttendance} disabled={isLoading}>
+                        {isLoading ? 'Starting...' : 'Start Attendance'}
+                      </Button>
                     </div>
                   </DrawerContent>
                 </Drawer>
@@ -198,7 +203,10 @@ export default function AdminDashboard() {
                       <DrawerDescription>Confirm to stop the session</DrawerDescription>
                     </DrawerHeader>
                     <div className="p-4">
-                      {StopAttendanceContent}
+                      <p>Are you sure you want to stop the current attendance session?</p>
+                      <Button onClick={stopAttendance} disabled={isLoading} variant="destructive" className="mt-4">
+                        {isLoading ? 'Stopping...' : 'Stop Attendance'}
+                      </Button>
                     </div>
                   </DrawerContent>
                 </Drawer>
@@ -216,7 +224,22 @@ export default function AdminDashboard() {
                       <DialogTitle>Start Attendance Session</DialogTitle>
                       <DialogDescription>Enter session details</DialogDescription>
                     </DialogHeader>
-                    {StartAttendanceContent}
+                    <Input
+                      placeholder="Company Name"
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      className="mb-4"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Attendance Duration (minutes)"
+                      value={attendanceDuration}
+                      onChange={(e) => setAttendanceDuration(Number(e.target.value))}
+                      className="mb-4"
+                    />
+                    <Button onClick={startAttendance} disabled={isLoading}>
+                      {isLoading ? 'Starting...' : 'Start Attendance'}
+                    </Button>
                   </DialogContent>
                 </Dialog>
                 <Dialog open={isStopOpen} onOpenChange={setIsStopOpen}>
@@ -230,12 +253,14 @@ export default function AdminDashboard() {
                       <DialogTitle>Stop Attendance Session</DialogTitle>
                       <DialogDescription>Confirm to stop the session</DialogDescription>
                     </DialogHeader>
-                    {StopAttendanceContent}
+                    <p>Are you sure you want to stop the current attendance session?</p>
+                    <Button onClick={stopAttendance} disabled={isLoading} variant="destructive" className="mt-4">
+                      {isLoading ? 'Stopping...' : 'Stop Attendance'}
+                    </Button>
                   </DialogContent>
                 </Dialog>
               </>
             )}
-            {/* CSV Download Button */}
             <CSVLink
               data={generateCSVData()}
               filename={`attendance_${new Date().toISOString()}.csv`}
@@ -265,16 +290,21 @@ export default function AdminDashboard() {
                 <TableHead>Roll Number</TableHead>
                 <TableHead>Timestamp</TableHead>
                 <TableHead>Location</TableHead>
+                <TableHead>Branch</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {attendanceList.map((record, index) => (
-                <TableRow key={index}>
-                  <TableCell>{record.rollNumber}</TableCell>
-                  <TableCell>{new Date(record.timestamp).toLocaleString()}</TableCell>
-                  <TableCell>{record.location}</TableCell>
-                </TableRow>
-              ))}
+              {attendanceList.map((record, index) => {
+                const branch = branchCodes[record.rollNumber.slice(0, 2)] || 'Unknown';
+                return (
+                  <TableRow key={index}>
+                    <TableCell>{record.rollNumber}</TableCell>
+                    <TableCell>{new Date(record.timestamp).toLocaleString()}</TableCell>
+                    <TableCell>{record.location}</TableCell>
+                    <TableCell>{branch}</TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </CardContent>

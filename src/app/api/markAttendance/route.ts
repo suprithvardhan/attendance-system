@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
-import { compareFaces } from '@/lib/faceRecognition';
+import { compareFaces, FACE_SIMILARITY_THRESHOLD } from '@/lib/faceRecognition';
 import { updateAttendance } from '../attendanceStream/route';
 import { corsMiddleware } from '@/lib/cors';
 
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
 
     const distance = compareFaces(new Float32Array(faceDescriptor), new Float32Array(student.faceDescriptor));
 
-    if (distance < 0.6) {
+    if (distance < FACE_SIMILARITY_THRESHOLD) {
       const existingAttendance = await db.collection('attendance').findOne({
         rollNumber,
         sessionId: activeSession._id
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json({ message: 'Attendance marked successfully' }, { headers: response?.headers });
     } else {
-      return NextResponse.json({ message: 'Face recognition failed' }, { status: 403, headers: response?.headers });
+      return NextResponse.json({ message: 'Face recognition failed. Please try again.' }, { status: 403, headers: response?.headers });
     }
   } catch (error) {
     console.error('Error marking attendance:', error);

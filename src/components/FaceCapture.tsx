@@ -1,4 +1,3 @@
-// src/components/FaceCapture.tsx
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button/button";
 import { Card, CardContent } from "@/components/ui/card/card";
@@ -20,14 +19,27 @@ export default function FaceCapture({ onCapture, isLoading }: FaceCaptureProps) 
 
     const startCamera = async () => {
       try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) {
-          videoRef.current.srcObject = localStream;
-          setIsCameraReady(true);
-          setStream(localStream);
+        // Check if mediaDevices and getUserMedia are supported
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          const constraints = {
+            video: {
+              facingMode: 'user',
+              width: { ideal: 640 },
+              height: { ideal: 480 }
+            }
+          };
+          localStream = await navigator.mediaDevices.getUserMedia(constraints);
+          if (videoRef.current) {
+            videoRef.current.srcObject = localStream;
+            setIsCameraReady(true);
+            setStream(localStream);
+          }
+        } else {
+          throw new Error('getUserMedia is not supported in this browser.');
         }
       } catch (error) {
         console.error("Unable to access camera:", error);
+        alert("Unable to access the camera. Please check your browser settings.");
       }
     };
 

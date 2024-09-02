@@ -23,3 +23,5 @@ export async function getFaceDescriptor(imageData: string): Promise<Float32Array
 export function compareFaces(descriptor1: Float32Array, descriptor2: Float32Array): number {
   return faceapi.euclideanDistance(descriptor1, descriptor2);
 }
+
+export const FACE_SIMILARITY_THRESHOLD = 0.6; // Adjust this value as needed
