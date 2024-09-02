@@ -24,4 +24,4 @@ export function compareFaces(descriptor1: Float32Array, descriptor2: Float32Arra
   return faceapi.euclideanDistance(descriptor1, descriptor2);
 }
 
-export const FACE_SIMILARITY_THRESHOLD = 0.6; // Adjust this value as needed
+export const FACE_SIMILARITY_THRESHOLD = 0.4; // Adjust this value as needed

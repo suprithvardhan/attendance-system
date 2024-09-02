@@ -1,7 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button/button";
 import { Card, CardContent } from "@/components/ui/card/card";
-import { motion } from 'framer-motion';
 
 interface FaceCaptureProps {
   onCapture: (imageData: string) => void;
@@ -14,21 +13,25 @@ export default function FaceCapture({ onCapture, isLoading }: FaceCaptureProps) 
   const [isCameraReady, setIsCameraReady] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
 
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  };
+
   useEffect(() => {
     let localStream: MediaStream | null = null;
 
     const startCamera = async () => {
       try {
-        // Check if mediaDevices and getUserMedia are supported
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
           const constraints = {
             video: {
-              facingMode: 'user',
+              facingMode: isMobileDevice() ? 'user' : 'environment',
               width: { ideal: 640 },
               height: { ideal: 480 }
             }
           };
-          localStream = await navigator.mediaDevices.getUserMedia(constraints);
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          localStream = stream;
           if (videoRef.current) {
             videoRef.current.srcObject = localStream;
             setIsCameraReady(true);
@@ -39,7 +42,7 @@ export default function FaceCapture({ onCapture, isLoading }: FaceCaptureProps) 
         }
       } catch (error) {
         console.error("Unable to access camera:", error);
-        alert("Unable to access the camera. Please check your browser settings.");
+        alert("Unable to access the camera. Please check your browser permissions and settings.");
       }
     };
 
@@ -59,8 +62,6 @@ export default function FaceCapture({ onCapture, isLoading }: FaceCaptureProps) 
         context.drawImage(videoRef.current, 0, 0, 640, 480);
         const imageData = canvasRef.current.toDataURL('image/jpeg');
         onCapture(imageData);
-        
-        // Stop the video stream
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
         }
@@ -69,60 +70,29 @@ export default function FaceCapture({ onCapture, isLoading }: FaceCaptureProps) 
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Card>
-        <CardContent className="p-4">
-          {!isLoading && (
-            <div className="relative aspect-video">
-              <video
-                ref={videoRef}
-                autoPlay
-                playsInline
-                muted
-                className="w-full h-full object-cover rounded-lg"
-              />
-            </div>
-          )}
-          {isLoading && (
-            <div className="relative aspect-video flex items-center justify-center">
-              <motion.div
-                animate={{
-                  scale: [1, 2, 2, 1, 1],
-                  rotate: [0, 0, 270, 270, 0],
-                  borderRadius: ["20%", "20%", "50%", "50%", "20%"],
-                }}
-                transition={{
-                  duration: 2,
-                  ease: "easeInOut",
-                  times: [0, 0.2, 0.5, 0.8, 1],
-                  repeat: Infinity,
-                  repeatDelay: 1
-                }}
-                className="w-32 h-32 bg-blue-500"
-              />
-              <motion.div
-                className="absolute text-white text-xl font-bold"
-                animate={{ opacity: [0, 1, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                Processing...
-              </motion.div>
-            </div>
-          )}
-          <canvas ref={canvasRef} width="640" height="480" className="hidden" />
-          <Button 
-            onClick={captureImage} 
-            disabled={!isCameraReady || isLoading}
-            className="mt-4 w-full"
-          >
-            {isCameraReady ? (isLoading ? 'Processing...' : 'Capture and Submit') : 'Preparing Camera...'}
-          </Button>
-        </CardContent>
-      </Card>
-    </motion.div>
+    <Card>
+      <CardContent className="p-4">
+        {!isLoading && (
+          <div className="relative aspect-video">
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="w-full h-full object-cover rounded-lg"
+            />
+          </div>
+        )}
+      
+        <canvas ref={canvasRef} width="640" height="480" className="hidden" />
+        <Button 
+          onClick={captureImage} 
+          disabled={!isCameraReady || isLoading}
+          className="mt-4 w-full"
+        >
+          {isCameraReady ? (isLoading ? 'Processing...' : 'Capture and Submit') : 'Preparing Camera...'}
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

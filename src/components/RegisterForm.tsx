@@ -1,4 +1,3 @@
-// src/components/RegisterForm.tsx
 'use client';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +9,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import Link from 'next/link';
 import FaceCapture from './FaceCapture';
 import { getFaceDescriptor } from '@/lib/faceRecognition';
+import ClipLoader from 'react-spinners/ClipLoader'; // Importing the spinner
 
 export default function RegisterForm() {
   const [rollNumber, setRollNumber] = useState('');
@@ -21,25 +21,18 @@ export default function RegisterForm() {
   const handleSubmit = async (imageData: string) => {
     setIsLoading(true);
     try {
-      // Simulating a delay for the face detection process
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
       const descriptor = await getFaceDescriptor(imageData);
       if (!descriptor) {
         throw new Error('No face detected. Please try again.');
       }
-
-      // Simulating a delay for the registration process
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rollNumber, faceDescriptor: Array.from(descriptor) }),
       });
-
       const data = await response.json();
-
       if (response.ok) {
         setRegistrationResult({ success: true, message: `Student with Roll Number ${rollNumber} has been registered successfully.` });
         confetti({
@@ -68,11 +61,7 @@ export default function RegisterForm() {
       transition={{ duration: 0.3 }}
       className="flex flex-col items-center justify-center"
     >
-      <h2
-        className={`text-2xl font-bold mb-4 ${
-          registrationResult?.success ? 'text-green-500' : 'text-red-500'
-        }`}
-      >
+      <h2 className={`text-2xl font-bold mb-4 ${registrationResult?.success ? 'text-green-500' : 'text-red-500'}`}>
         {registrationResult?.success ? 'Registration Successful!' : 'Registration Failed'}
       </h2>
       <p className="mb-8 text-center">{registrationResult?.message}</p>
@@ -135,29 +124,20 @@ export default function RegisterForm() {
               >
                 <FaceCapture onCapture={handleSubmit} isLoading={isLoading} />
                 {isLoading && (
-                  <motion.div
-                    className="mt-4 flex flex-col items-center"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <motion.div
-                      className="w-16 h-16 border-4 border-blue-500 rounded-full"
-                      animate={{
-                        rotate: 360,
-                        borderColor: ['#4299e1', '#6b46c1', '#38a169', '#4299e1'],
-                      }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                  <div className="mt-4 flex flex-col items-center justify-center space-y-4">
+                    <ClipLoader
+                      color="#4A90E2"
+                      size={60}
+                      cssOverride={{ display: 'block', margin: '0 auto' }}
                     />
                     <motion.p
-                      className="mt-2 text-blue-500 font-semibold"
+                      className="text-blue-500 font-semibold"
                       animate={{ opacity: [0.5, 1, 0.5] }}
                       transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                     >
                       Processing...
                     </motion.p>
-                  </motion.div>
+                  </div>
                 )}
               </motion.div>
             )}

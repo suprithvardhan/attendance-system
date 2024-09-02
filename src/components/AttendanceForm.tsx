@@ -51,15 +51,10 @@ export default function AttendanceForm() {
   const handleSubmit = async (imageData: string) => {
     setIsLoading(true);
     try {
-      // Simulating a delay for the face detection process
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
       const descriptor = await getFaceDescriptor(imageData);
       if (!descriptor) throw new Error('No face detected. Please try again.');
-
-      // Simulating a delay for the attendance marking process
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
       const response = await fetch('/api/markAttendance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -69,10 +64,8 @@ export default function AttendanceForm() {
           location: location ? `${location.latitude},${location.longitude}` : 'Unknown',
         }),
       });
-
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Attendance marking failed');
-
       setAttendanceResult({ success: true, message: `Attendance marked successfully for Roll Number: ${rollNumber}` });
     } catch (error) {
       setAttendanceResult({
@@ -92,11 +85,7 @@ export default function AttendanceForm() {
       transition={{ duration: 0.3 }}
       className="flex flex-col items-center justify-center"
     >
-      <h2
-        className={`text-2xl font-bold mb-4 ${
-          attendanceResult?.success ? 'text-green-500' : 'text-red-500'
-        }`}
-      >
+      <h2 className={`text-2xl font-bold mb-4 ${attendanceResult?.success ? 'text-green-500' : 'text-red-500'}`}>
         {attendanceResult?.success ? 'Attendance Marked Successfully!' : 'Attendance Marking Failed'}
       </h2>
       <p className="mb-8 text-center">{attendanceResult?.message}</p>
