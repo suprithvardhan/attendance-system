@@ -5,11 +5,15 @@ import confetti from 'canvas-confetti';
 import { useToast } from '@/components/ui/use-toast/use-toast';
 import { Button } from '@/components/ui/button/button';
 import { Input } from '@/components/ui/input/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card/card';
-import Link from 'next/link';
-import FaceCapture from './FaceCapture';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card/card';
+import dynamic from 'next/dynamic';
 import { getFaceDescriptor } from '@/lib/faceRecognition';
-import ClipLoader from 'react-spinners/ClipLoader'; // Importing the spinner
+import { Loader2 } from 'lucide-react';
+
+const FaceCapture = dynamic(() => import('./FaceCapture'), {
+  loading: () => <p>Loading camera...</p>,
+  ssr: false
+});
 
 export default function RegisterForm() {
   const [rollNumber, setRollNumber] = useState('');
@@ -21,12 +25,10 @@ export default function RegisterForm() {
   const handleSubmit = async (imageData: string) => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
       const descriptor = await getFaceDescriptor(imageData);
       if (!descriptor) {
         throw new Error('No face detected. Please try again.');
       }
-      await new Promise((resolve) => setTimeout(resolve, 2000));
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -65,103 +67,90 @@ export default function RegisterForm() {
         {registrationResult?.success ? 'Registration Successful!' : 'Registration Failed'}
       </h2>
       <p className="mb-8 text-center">{registrationResult?.message}</p>
-      <Link href="/register">
-        <Button>Register Another Student</Button>
-      </Link>
+      <Button onClick={() => {
+        setStep(1);
+        setRegistrationResult(null);
+        setRollNumber('');
+      }}>
+        Register Another Student
+      </Button>
     </motion.div>
   );
 
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.9 }}
-      transition={{ duration: 0.5 }}
-      className="container mx-auto p-4 max-w-md"
-    >
-      <Card className="w-full">
-        <CardHeader>
-          <CardTitle>Register</CardTitle>
-          <CardDescription>Register a new student</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <AnimatePresence mode="wait">
-            {step === 1 && (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Button onClick={() => setStep(2)} className="w-full">
-                  Register New Student
-                </Button>
-              </motion.div>
-            )}
-            {step === 2 && (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <Input
-                  placeholder="Roll Number"
-                  value={rollNumber}
-                  onChange={(e) => setRollNumber(e.target.value)}
-                />
-              </motion.div>
-            )}
-            {step === 3 && !registrationResult && (
-              <motion.div
-                key="step3"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <FaceCapture onCapture={handleSubmit} isLoading={isLoading} />
-                {isLoading && (
-                  <div className="mt-4 flex flex-col items-center justify-center space-y-4">
-                    <ClipLoader
-                      color="#4A90E2"
-                      size={60}
-                      cssOverride={{ display: 'block', margin: '0 auto' }}
-                    />
-                    <motion.p
-                      className="text-blue-500 font-semibold"
-                      animate={{ opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                    >
-                      Processing...
-                    </motion.p>
-                  </div>
-                )}
-              </motion.div>
-            )}
-            {registrationResult && (
-              <motion.div
-                key="result"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-              >
-                {renderResult()}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </CardContent>
-        <CardFooter>
-          {step === 2 && (
-            <Button onClick={() => setStep(3)} className="w-full">
-              Next
-            </Button>
-          )}
-        </CardFooter>
-      </Card>
-    </motion.div>
+    <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.3 }}
+        className="w-full max-w-md"
+      >
+        <Card className="w-full bg-card text-card-foreground">
+          <CardHeader>
+            <CardTitle className="text-2xl">Register</CardTitle>
+            <CardDescription>Register a new student</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AnimatePresence mode="wait">
+              {step === 1 && (
+                <motion.div
+                  key="step1"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Button onClick={() => setStep(2)} className="w-full">
+                    Register New Student
+                  </Button>
+                </motion.div>
+              )}
+              {step === 2 && (
+                <motion.div
+                  key="step2"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Input
+                    placeholder="Roll Number"
+                    value={rollNumber}
+                    onChange={(e) => setRollNumber(e.target.value)}
+                    className="mb-4"
+                  />
+                  <Button onClick={() => setStep(3)} className="w-full">
+                    Next
+                  </Button>
+                </motion.div>
+              )}
+              {step === 3 && !registrationResult && (
+                <motion.div
+                  key="step3"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <FaceCapture onCapture={handleSubmit} isLoading={isLoading} />
+                </motion.div>
+              )}
+              {registrationResult && (
+                <motion.div
+                  key="result"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {renderResult()}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
   );
 }

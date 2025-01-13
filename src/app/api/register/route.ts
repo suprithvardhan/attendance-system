@@ -1,39 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
+import { getDb } from '@/lib/mongodb';
 import { corsMiddleware } from '@/lib/cors';
 import { compareFaces, FACE_SIMILARITY_THRESHOLD } from '@/lib/faceRecognition';
+import { cache } from 'react';
+
+const getExistingStudents = cache(async () => {
+  const db = await getDb();
+  return db.collection('students').find({}, { projection: { rollNumber: 1, faceDescriptor: 1 } }).toArray();
+});
 
 export async function POST(request: NextRequest) {
   const response = await corsMiddleware(request, NextResponse.next());
-  console.log('Register route accessed');
 
   try {
     const { rollNumber, faceDescriptor } = await request.json();
-    console.log('Received data:', { rollNumber, faceDescriptor });
 
     if (!rollNumber || !faceDescriptor) {
-      console.error('Missing roll number or face descriptor');
       return NextResponse.json({ message: 'Roll number and face descriptor are required' }, { status: 400, headers: response?.headers });
     }
 
-    const client = await clientPromise;
-    const db = client.db('attendance_system');
+    const db = await getDb();
+
+    // Use cached query for existing students
+    const allStudents = await getExistingStudents();
 
     // Check if roll number already exists
-    const existingStudent = await db.collection('students').findOne({ rollNumber });
+    const existingStudent = allStudents.find(student => student.rollNumber === rollNumber);
     if (existingStudent) {
-      console.warn(`Roll number ${rollNumber} already registered`);
       return NextResponse.json({ message: 'Student with this roll number is already registered' }, { status: 409, headers: response?.headers });
     }
 
     // Check if face is already registered
-    const allStudents = await db.collection('students').find().toArray();
     for (const student of allStudents) {
       const similarity = compareFaces(new Float32Array(faceDescriptor), new Float32Array(student.faceDescriptor));
-      console.log(`Comparing faces with student ${student.rollNumber}: Similarity = ${similarity}`);
       if (similarity < FACE_SIMILARITY_THRESHOLD) {
-        console.warn('Face similarity threshold breached. Possible duplicate face registration.');
-        return NextResponse.json({ message: 'This face is already registered with a different roll number'+` ${student.rollNumber}` }, { status: 409, headers: response?.headers });
+        return NextResponse.json({ message: `This face is already registered with roll number ${student.rollNumber}` }, { status: 409, headers: response?.headers });
       }
     }
 
@@ -43,7 +44,6 @@ export async function POST(request: NextRequest) {
       faceDescriptor: Array.from(faceDescriptor),
       registeredAt: new Date()
     });
-    console.log(`Student ${rollNumber} registered successfully`);
 
     return NextResponse.json({ message: 'Student registered successfully' }, { status: 201, headers: response?.headers });
   } catch (error) {

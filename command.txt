@@ -1,0 +1,8 @@
+i need few changes in the ui and functionalities in the admin page 
+First thing is by making the admin page fluid responsive add a navbar to it which has 3 nav items HOME,START SESSION,ANALYSIS, startsession nav item content displays the current dashboard page like how my dashboard is looking currently same it is displayed as content for the nav item start session 
+
+and in the home page  it is divided into 2 sections first section just as good welcome message and second section has this good title which says some highlights and analysis of previous or current active session 
+below that it displays this information with titles
+company: , starttime: ,end time:,status:, no of students attended:, (in real time)and below this 2 buttons generate csv and show analysis , generate csv is clicked downloads the excel file and when show analysis is clicked a pop up modal displays the pie chart analysis of the session clealry 
+for now lets keep the analysis nav item content empty lets work on that content of analysis nav item later and instead of writing all the code in admindashboard.tsx page lets create 
+more components required and make the code more modular and reusable and easier to maintain and add more features later on    

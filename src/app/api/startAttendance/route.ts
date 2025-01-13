@@ -1,42 +1,89 @@
+// src/app/api/startAttendance/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import clientPromise from '@/lib/mongodb';
-import { corsMiddleware } from '@/lib/cors';
+import { MongoClient, Db } from 'mongodb';
 
 export async function POST(request: NextRequest) {
-  const response = await corsMiddleware(request, NextResponse.next());
+  let client: MongoClient | null = null;
+  let db: Db | null = null;
 
   try {
-    const { companyName, duration } = await request.json();
-
-    if (!companyName || !duration) {
-      return NextResponse.json({ message: 'Company name and duration are required' }, { status: 400, headers: response?.headers });
+    const { companyName, duration, location } = await request.json();
+    
+    if (!companyName?.trim()) {
+      return NextResponse.json(
+        { error: 'Company name is required' },
+        { status: 400 }
+      );
     }
 
-    const client = await clientPromise;
-    const db = client.db('attendance_system');
+    try {
+      client = await clientPromise;
+      db = client.db('attendance_system');
+    } catch (error: unknown) {
+      console.error('MongoDB connection error:', error);
+      return NextResponse.json(
+        { 
+          error: 'Database connection error',
+          details: 'Unable to establish database connection. Please try again.'
+        },
+        { status: 503 }
+      );
+    }
 
-    await db.collection('attendanceSessions').updateMany(
-      { isActive: true },
-      { $set: { isActive: false, endTime: new Date() } }
-    );
+    // Test connection
+    try {
+      await db.command({ ping: 1 });
+    } catch (error: unknown) {
+      console.error('Database ping failed:', error);
+      return NextResponse.json(
+        { 
+          error: 'Database connection error',
+          details: 'Database connection test failed. Please try again.'
+        },
+        { status: 503 }
+      );
+    }
 
-    const session = {
-      companyName,
-      duration: Number(duration),
+    // Check for active session
+    const activeSession = await db.collection('attendanceSessions')
+      .findOne({ isActive: true });
+
+    if (activeSession) {
+      return NextResponse.json(
+        { error: 'An active session already exists' },
+        { status: 400 }
+      );
+    }
+
+    const session = await db.collection('attendanceSessions').insertOne({
+      companyName: companyName.trim(),
       startTime: new Date(),
       endTime: new Date(Date.now() + Number(duration) * 60000),
-      isActive: true
-    };
+      isActive: true,
+      location: {
+        type: 'Point',
+        coordinates: [Number(location.lng), Number(location.lat)]
+      },
+      duration: Number(duration)
+    });
 
-    const result = await db.collection('attendanceSessions').insertOne(session);
+    const newSession = await db.collection('attendanceSessions')
+      .findOne({ _id: session.insertedId });
 
-    if (!result.insertedId) {
-      throw new Error('Failed to insert new session');
-    }
+    return NextResponse.json({
+      message: 'Attendance session started',
+      session: newSession
+    }, { status: 201 });
 
-    return NextResponse.json({ message: 'Attendance window opened', session }, { headers: response?.headers });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error starting attendance:', error);
-    return NextResponse.json({ message: 'Error starting attendance', error: (error as Error).message }, { status: 500, headers: response?.headers ?? {} });
+    return NextResponse.json(
+      { 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      },
+      { status: 500 }
+    );
   }
 }

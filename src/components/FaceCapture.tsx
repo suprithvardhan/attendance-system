@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button/button";
 import { Card, CardContent } from "@/components/ui/card/card";
+import { motion } from 'framer-motion';
+import { resizeImage } from '@/lib/imageProcessing';
 
 interface FaceCaptureProps {
   onCapture: (imageData: string) => void;
@@ -55,13 +57,14 @@ export default function FaceCapture({ onCapture, isLoading }: FaceCaptureProps) 
     };
   }, []);
 
-  const captureImage = () => {
+  const captureImage = async () => {
     if (videoRef.current && canvasRef.current) {
       const context = canvasRef.current.getContext('2d');
       if (context) {
         context.drawImage(videoRef.current, 0, 0, 640, 480);
         const imageData = canvasRef.current.toDataURL('image/jpeg');
-        onCapture(imageData);
+        const resizedImageData = await resizeImage(imageData, 300, 300);
+        onCapture(resizedImageData);
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
         }
@@ -73,13 +76,13 @@ export default function FaceCapture({ onCapture, isLoading }: FaceCaptureProps) 
     <Card>
       <CardContent className="p-4">
         {!isLoading && (
-          <div className="relative aspect-video">
+          <div className="relative aspect-video rounded-lg overflow-hidden">
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className="w-full h-full object-cover rounded-lg"
+              className="w-full h-full object-cover"
             />
           </div>
         )}

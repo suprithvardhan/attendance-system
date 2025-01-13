@@ -1,26 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
-import clientPromise from '@/lib/mongodb';
-import { corsMiddleware } from '@/lib/cors';
+import { getDb } from '@/lib/mongodb';
 
 export async function POST(request: NextRequest) {
-  const response = await corsMiddleware(request, NextResponse.next());
-
+  console.log('Stop attendance API route hit');
   try {
-    const client = await clientPromise;
-    const db = client.db('attendance_system');
+    const db = await getDb();
 
-    const result = await db.collection('attendanceSessions').updateOne(
+    const result = await db.collection('attendanceSessions').findOneAndUpdate(
       { isActive: true },
-      { $set: { isActive: false, endTime: new Date() } }
+      { $set: { isActive: false, endTime: new Date() } },
+      { returnDocument: 'after' }
     );
 
-    if (result.modifiedCount === 0) {
-      return NextResponse.json({ message: 'No active attendance session found' }, { status: 404, headers: response?.headers });
+    if (!result?.value) {
+      console.log('No active attendance session found');
+      return NextResponse.json({ message: 'No active attendance session found' }, { status: 404 });
     }
 
-    return NextResponse.json({ message: 'Attendance window closed' }, { headers: response?.headers });
+    console.log('Attendance session stopped:', result.value);
+
+    return NextResponse.json({ message: 'Attendance session stopped', session: result.value });
   } catch (error) {
     console.error('Error stopping attendance:', error);
-    return NextResponse.json({ message: 'Error stopping attendance' }, { status: 500, headers: response?.headers ?? {} });
+    return NextResponse.json({ message: 'Error stopping attendance', error: (error as Error).message }, { status: 500 });
   }
 }

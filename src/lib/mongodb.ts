@@ -1,31 +1,56 @@
 import { MongoClient, MongoClientOptions } from 'mongodb';
 
-const uri = process.env.MONGODB_URI;
-const options: MongoClientOptions = {};
-
-if (!uri) {
+if (!process.env.MONGODB_URI) {
   throw new Error('Please add your Mongo URI to .env.local');
 }
 
-let client: MongoClient;
+const uri = process.env.MONGODB_URI;
+const options: MongoClientOptions = {
+  maxPoolSize: 10,
+  serverSelectionTimeoutMS: 30000,
+  socketTimeoutMS: 45000,
+  connectTimeoutMS: 30000,
+  retryWrites: true,
+  retryReads: true,
+  ssl: true,
+  tls: true,
+  tlsAllowInvalidCertificates: true,
+  tlsAllowInvalidHostnames: true,
+};
+
+declare global {
+  var _mongoClientPromise: Promise<MongoClient> | undefined;
+  var _mongoClient: MongoClient | undefined;
+}
+
 let clientPromise: Promise<MongoClient>;
 
 if (process.env.NODE_ENV === 'development') {
-  if (!(global as any)._mongoClientPromise) {
-    client = new MongoClient(uri, options);
-    (global as any)._mongoClientPromise = client.connect().catch(err => {
-      console.error('Failed to connect to MongoDB:', err);
-      throw err;
-    });
+  if (!global._mongoClient) {
+    global._mongoClient = new MongoClient(uri, options);
+    global._mongoClientPromise = global._mongoClient.connect();
   }
-  clientPromise = (global as any)._mongoClientPromise;
+  
+  if (!global._mongoClientPromise) {
+    throw new Error('MongoDB client promise not initialized');
+  }
+  
+  clientPromise = global._mongoClientPromise;
 } else {
-  client = new MongoClient(uri, options);
-  clientPromise = client.connect().catch(err => {
-    console.error('Failed to connect to MongoDB:', err);
-    throw err;
-  });
+  const client = new MongoClient(uri, options);
+  clientPromise = client.connect();
 }
 
-
 export default clientPromise;
+
+export const getDb = async () => {
+  try {
+    const client = await clientPromise;
+    const db = client.db('attendance_system');
+    await db.command({ ping: 1 });
+    return db;
+  } catch (error: unknown) {
+    console.error('MongoDB connection error:', error);
+    throw new Error('Failed to connect to database');
+  }
+};

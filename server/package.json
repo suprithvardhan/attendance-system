@@ -1,0 +1,30 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cookie": "^0.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "geolib": "^3.3.4",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^6.8.1",
+    "node-cron": "^3.0.3",
+    "nodemon": "^3.1.4",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "@types/cookie": "^0.6.0",
+    "@types/geolib": "^2.0.3",
+    "@types/jsonwebtoken": "^9.0.6"
+  }
+}
