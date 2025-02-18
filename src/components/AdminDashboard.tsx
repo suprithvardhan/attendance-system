@@ -167,8 +167,10 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
     };
   }, []);
 
-  const handleStartAttendance = async () => {
-    if (!location) {
+  const handleStartAttendance = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!attendanceLocation) {
       toast({
         title: "Error",
         description: "Please select a location first",
@@ -177,12 +179,21 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
       return;
     }
 
+    if (!attendanceDuration || attendanceDuration <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid duration in minutes",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
       const response = await startAttendance({
-        location,
+        location: attendanceLocation,
         companyName,
-        duration: Number(duration)
+        duration: attendanceDuration
       });
 
       if (socket) {
@@ -190,7 +201,7 @@ export default function AdminDashboard({ onLogout }: AdminDashboardProps) {
       }
 
       setCurrentSession(response.data.session);
-      setShowLocationDialog(false);
+      setIsStartOpen(false);
       toast({
         title: "Success",
         description: "Attendance session started successfully",
