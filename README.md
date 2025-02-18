@@ -96,5 +96,5 @@ We welcome contributions! Follow these steps:
 This project is licensed under the **MIT License**.
 
 <div align="center">
-  Made with ❤️ by the FaceTrack Team
+  Made with ❤️ by suprith vardhan
 </div>
